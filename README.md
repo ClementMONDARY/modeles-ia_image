@@ -60,56 +60,6 @@ Puis lancez :
 ```bash
 python main.py
 ```
-
-### En Python
-
-```python
-from PIL import Image
-from src.pipeline import DetectionSegmentationPipeline
-from src.visualization import draw_results, print_summary
-
-pipeline = DetectionSegmentationPipeline(detection_threshold=0.5)
-image = Image.open("images/photo.jpg").convert("RGB")
-
-results = pipeline.run(image)
-print_summary(results)
-
-annotated = draw_results(image, results)
-annotated.save("outputs/result.jpg")
-```
-
----
-
-## API FastAPI (optionnel)
-
-```bash
-# Lancer le serveur
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-
-# Documentation interactive : http://localhost:8000/docs
-```
-
-### Endpoints
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/health` | Statut de l'API |
-| `POST` | `/analyze` | JSON + image annotée en base64 |
-| `POST` | `/analyze/image` | Image annotée directement (JPEG) |
-
-### Exemples cURL
-
-```bash
-# Récupérer l'image annotée
-curl -X POST "http://localhost:8000/analyze/image" \
-     -F "file=@images/photo.jpg" \
-     --output result.jpg
-
-# Obtenir les détections en JSON
-curl -X POST "http://localhost:8000/analyze" \
-     -F "file=@images/photo.jpg"
-```
-
 ---
 
 ## Modèles utilisés
@@ -126,14 +76,6 @@ curl -X POST "http://localhost:8000/analyze" \
 - Entrée : crop d'un objet → Sortie : carte de segmentation panoptique pixel-à-pixel
 - ~70 M paramètres
 
-### Stratégie de sélection du masque
-
-Lors de la segmentation d'un crop, le modèle peut renvoyer plusieurs segments. La sélection suit la priorité suivante :
-
-1. **Correspondance par label** : segment dont le label correspond à celui détecté par YOLOS
-2. **Plus grande instance** : segment "thing" (pas de la classe "stuff") avec la plus grande aire
-3. **Segment central** : segment présent au centre géométrique du crop
-
 ---
 
 ## Dépendances principales
@@ -145,19 +87,3 @@ Lors de la segmentation d'un crop, le modèle peut renvoyer plusieurs segments. 
 | `Pillow` | Manipulation d'images |
 | `numpy` | Opérations sur les masques |
 | `fastapi` + `uvicorn` | API REST (optionnel) |
-
----
-
-## Obtenir des images de test
-
-Vous pouvez tester le pipeline avec des images issues de :
-
-- **MS COCO** : [cocodataset.org](https://cocodataset.org/#download) — base de données généraliste
-- **HuggingFace Datasets** :
-  ```python
-  from datasets import load_dataset
-  ds = load_dataset("rafaelpadilla/coco2017", split="validation", streaming=True)
-  sample = next(iter(ds))
-  sample["image"].save("images/coco_sample.jpg")
-  ```
-- **Vos propres photos** : placez-les dans le dossier `images/`
